@@ -1,44 +1,58 @@
 package web.dao;
 
-import org.springframework.stereotype.Component;
+import org.hibernate.SessionFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Repository;
 import web.model.User;
 
-import java.util.ArrayList;
+import javax.persistence.Query;
+import javax.persistence.TypedQuery;
 import java.util.List;
 
-@Component
+@Repository
 public class UserDaoImpl implements UserDao {
-    // TODO use real data base with hibernate
-    private List<User> userList;
+    private final SessionFactory sessionFactory;
 
-    {
-        userList = new ArrayList<>();
-        userList.add(new User(0, "Bryan", 170, "Network Engineer"));
-        userList.add(new User(1, "John Doe", 178, "Software Engineer"));
-        userList.add(new User(2, "Jane Smith", 165, "Marketing Manager"));
-        userList.add(new User(3, "Bob Johnson", 183, "Data Analyst"));
-        userList.add(new User(4, "Alice Williams", 157, "Product Manager"));
-        userList.add(new User(5, "Charlie Brown", 170, "UX Designer"));
-        userList.add(new User(6, "Emily Davis", 168, "Technical Writer"));
-        userList.add(new User(7, "Frank Miller", 180, "QA Engineer"));
-        userList.add(new User(8, "Grace Wilson", 163, "DevOps Engineer"));
-        userList.add(new User(9, "Harry Moore", 175, "Project Manager"));
-        userList.add(new User(10, "Irene Taylor", 160, "Business Analyst"));
-        userList.add(new User(11, "David", 175, "DevOps Engineer"));
+    @Autowired
+    public UserDaoImpl(SessionFactory sessionFactory) {
+        this.sessionFactory = sessionFactory;
     }
 
     @Override
     public void add(User user) {
-        userList.add(user);
+        sessionFactory.getCurrentSession().save(user);
     }
 
     @Override
     public List<User> listUsers() {
-        return userList;
+        TypedQuery<User> query = sessionFactory.getCurrentSession().createQuery("FROM User");
+        return query.getResultList();
     }
 
     @Override
     public User getUserById(int id) {
-        return userList.stream().filter(user -> user.getId() == id).findAny().orElse(null);
+        String hql = "SELECT u FROM User u WHERE u.id = :id";
+        Query q = sessionFactory.getCurrentSession().createQuery(hql);
+        q.setParameter("id", id);
+        return (User) q.getSingleResult();
+    }
+
+    @Override
+    public void deleteUserById(int id) {
+        String hql = "DELETE FROM User WHERE id = :userId";
+        Query q = sessionFactory.getCurrentSession().createQuery(hql);
+        q.setParameter("userId", id);
+        q.executeUpdate();
+    }
+
+    @Override
+    public void updateUser(int id, User user) {
+        String hql = "UPDATE User SET name = :name, height = :height, occupation = :occupation WHERE id = :userId";
+        Query q = sessionFactory.getCurrentSession().createQuery(hql);
+        q.setParameter("name", user.getName());
+        q.setParameter("height", user.getHeight());
+        q.setParameter("occupation", user.getOccupation());
+        q.setParameter("userId", id);
+        q.executeUpdate();
     }
 }
